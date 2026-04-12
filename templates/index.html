@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Web Packet Analyzer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Share+Tech+Mono&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #020617;
+      color: #e6edf3;
+      font-family: 'Share Tech Mono', monospace;
+      scroll-behavior: smooth;
+      background-image: radial-gradient(#0f172a 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    .section { padding: 40px 60px; }
+    h2 { color: #00ffcc; margin-bottom: 15px; }
+    h3 { color: #94a3b8; margin: 20px 0 10px; }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 40px;
+      background: rgba(0,0,0,0.7);
+      border-bottom: 1px solid #0f172a;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { font-family: 'Orbitron'; color: #00ffcc; font-size: 18px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-links button, .help-btn {
+      background: none; border: none; color: #94a3b8;
+      cursor: pointer; font-family: 'Share Tech Mono', monospace;
+      font-size: 13px; padding: 6px 10px;
+    }
+    .nav-links button:hover { color: #00ffcc; }
+    .help-btn {
+      border: 1px solid #00ffcc44; border-radius: 6px;
+      color: #00ffcc; padding: 6px 14px;
+    }
+    .help-btn:hover { background: #00ffcc11; }
+
+    .hero {
+      height: 70vh; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .hero h1 {
+      font-family: 'Orbitron'; font-size: 52px;
+      color: #00ffcc; text-shadow: 0 0 20px #00ffcc;
+    }
+    .hero p { color: #94a3b8; margin-top: 15px; font-size: 15px; }
+
+    .divider { width: 85%; margin: 30px auto; border-bottom: 1px solid #1f2937; }
+
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card { background: rgba(0,255,200,0.05); padding: 18px; border-radius: 10px; border: 1px solid #00ffcc22; }
+    .step-tag { color: #00ffcc; font-size: 11px; margin-bottom: 8px; }
+
+    .styled-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .styled-table th { color: #00ffcc; padding: 10px 12px; border-bottom: 1px solid #1f2937; text-align: left; }
+    .styled-table td { padding: 10px 12px; border-bottom: 1px solid #1f2937; color: #94a3b8; }
+
+    /* Applications section */
+    .app-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+    .app-card {
+      background: rgba(122, 184, 240, 0.05);
+      padding: 18px; border-radius: 10px;
+      border: 1px solid #7ab8f033;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .app-icon { font-size: 22px; }
+    .app-title { color: #7ab8f0; font-size: 13px; font-weight: bold; }
+    .app-desc { color: #94a3b8; font-size: 12px; line-height: 1.6; }
+
+    .pipeline { display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+    .node { padding: 10px 14px; background: #111827; border-radius: 8px; border: 1px solid #1f2937; color: #94a3b8; font-size: 13px; transition: all .3s; }
+    .node.active { color: #00ffcc; border-color: #00ffcc; box-shadow: 0 0 12px #00ffcc55; }
+    .node.done   { background: #00ffcc22; color: #00ffcc; border-color: #00ffcc44; }
+
+    .sim-box { background: #111827; border-radius: 10px; border: 1px solid #1f2937; }
+    .sim-header { padding: 10px 16px; border-bottom: 1px solid #1f2937; color: #94a3b8; font-size: 13px; }
+    .sim-body { padding: 20px; }
+    .sim-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+    input[type="text"] {
+      flex: 1; padding: 10px; background: #020617; border: 1px solid #00ffcc33;
+      color: white; font-family: 'Share Tech Mono', monospace; font-size: 14px;
+      border-radius: 4px; min-width: 200px;
+    }
+    input:focus { outline: none; border-color: #00ffcc; }
+
+    .btn-run {
+      padding: 10px 20px; background: #00ffcc; border: none; cursor: pointer;
+      border-radius: 4px; font-family: 'Share Tech Mono', monospace;
+      font-weight: bold; color: #020617; font-size: 14px;
+    }
+    .btn-run:hover { background: #00e0b4; }
+
+    .btn-dl {
+      padding: 10px 16px; background: none; border: 1px solid #00ffcc44;
+      color: #00ffcc; cursor: pointer; border-radius: 4px;
+      font-family: 'Share Tech Mono', monospace; font-size: 13px; display: none;
+    }
+    .btn-dl:hover { background: #00ffcc11; }
+
+    #output {
+      background: #000; margin-top: 16px; padding: 16px;
+      min-height: 260px; max-height: 520px; overflow-y: auto;
+      border-radius: 6px; border: 1px solid #1f2937;
+      font-size: 13px; line-height: 1.7;
+    }
+
+    .out-section { margin: 10px 0 4px; border-top: 1px solid #1f2937; padding-top: 10px; }
+    .out-section-title { color: #00ffcc; font-size: 12px; letter-spacing: .08em; margin-bottom: 6px; }
+
+    .line-ok   { color: #00ffcc; }
+    .line-info { color: #7ab8f0; }
+    .line-warn { color: #f0a500; }
+    .line-err  { color: #ff6b6b; }
+
+    iframe { width: 100%; height: 380px; border-radius: 10px; border: none; }
+
+    .ref-box { background: #0f172a; padding: 14px 18px; margin-top: 10px; border-radius: 8px; border: 1px solid #1f2937; color: #94a3b8; }
+    .ref-box a { color: #00ffcc; text-decoration: none; }
+    .ref-box a:hover { text-decoration: underline; }
+    .ref-label { color: #00ffcc; font-size: 11px; margin-bottom: 4px; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #111827; border: 1px solid #00ffcc33; border-radius: 12px; padding: 28px; max-width: 520px; width: 90%; position: relative; color: #e6edf3; }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 16px; }
+    .modal p, .modal li { font-size: .88rem; color: #94a3b8; line-height: 1.8; }
+    .modal ul { margin: 8px 0 12px 18px; }
+    .modal strong { color: #00ffcc; }
+    .modal code { background: #020617; padding: 1px 5px; border-radius: 3px; color: #7ab8f0; }
+    .modal-close { position: absolute; top: 14px; right: 14px; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 18px; }
+    .modal-close:hover { color: #fff; }
+
+    .dev-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+    .dev-card { background: #020617; border: 1px solid #00ffcc22; border-radius: 10px; padding: 16px; text-align: center; }
+    .dev-avatar { width: 48px; height: 48px; border-radius: 50%; background: #00ffcc22; border: 1px solid #00ffcc44; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 10px; }
+    .dev-name { color: #e6edf3; font-size: .9rem; font-weight: bold; }
+    .dev-roll { color: #00ffcc; font-size: .78rem; margin-top: 4px; }
+    .guide-box { background: #020617; border: 1px solid #7ab8f033; border-radius: 10px; padding: 16px; margin-top: 4px; display: flex; align-items: center; gap: 14px; }
+    .guide-avatar { width: 48px; height: 48px; border-radius: 50%; background: #7ab8f022; border: 1px solid #7ab8f044; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .guide-label { color: #7ab8f0; font-size: .72rem; letter-spacing: .08em; margin-bottom: 4px; }
+    .guide-name { color: #e6edf3; font-size: .9rem; font-weight: bold; }
+    .guide-desig { color: #94a3b8; font-size: .8rem; margin-top: 3px; }
+    .dev-avatar img, .guide-avatar img {  width: 100%;  height: 100%;  object-fit: cover;  border-radius: 50%;}
+  </style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="logo">Web Analyzer</div>
+  <div class="nav-right">
+    <div class="nav-links">
+      <button onclick="jumpTo('concept')">CONCEPT</button>
+      <button onclick="jumpTo('simulate')">SIMULATE</button>
+      <button onclick="jumpTo('video')">VIDEO</button>
+      <button onclick="jumpTo('references')">REFERENCES</button>
+    </div>
+    <button class="help-btn" onclick="document.getElementById('devModal').classList.add('open')">&#128100; DEVELOPED BY</button>
+    <button class="help-btn" onclick="document.getElementById('helpModal').classList.add('open')">? HELP</button>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>Web Packet Analyzer</h1>
+  <p>Step-by-step simulation of secure web communication</p>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="concept">
+  <h2>What is HTTPS Communication?</h2>
+  <p style="color:#94a3b8">HTTPS combines HTTP with TLS encryption to ensure secure, authenticated communication over the internet.</p>
+
+  <h3>Step-by-Step Explanation</h3>
+  <div class="cards">
+    <div class="card"><div class="step-tag">STEP 01</div><b>URL Parsing</b><p style="color:#94a3b8;margin-top:8px;font-size:13px">Break URL into scheme, host, port, path.</p></div>
+    <div class="card"><div class="step-tag">STEP 02</div><b>DNS Resolution</b><p style="color:#94a3b8;margin-top:8px;font-size:13px">Resolve domain name to IP address.</p></div>
+    <div class="card"><div class="step-tag">STEP 03</div><b>TCP Handshake</b><p style="color:#94a3b8;margin-top:8px;font-size:13px">SYN &rarr; SYN-ACK &rarr; ACK &mdash; connection established.</p></div>
+    <div class="card"><div class="step-tag">STEP 04</div><b>TLS Handshake</b><p style="color:#94a3b8;margin-top:8px;font-size:13px">Negotiate cipher, exchange certs, derive keys.</p></div>
+    <div class="card"><div class="step-tag">STEP 05</div><b>HTTP Request</b><p style="color:#94a3b8;margin-top:8px;font-size:13px">Send GET request over encrypted channel.</p></div>
+    <div class="card"><div class="step-tag">STEP 06</div><b>Response</b><p style="color:#94a3b8;margin-top:8px;font-size:13px">Receive, parse, and display server response.</p></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- APPLICATIONS SECTION -->
+  <h2>Applications</h2>
+  <p style="color:#94a3b8;margin-bottom:4px">Real-world uses of HTTPS packet analysis and secure web communication.</p>
+  <div class="app-cards">
+    <div class="app-card">
+      <div class="app-icon">&#128274;</div>
+      <div class="app-title">Security Auditing</div>
+      <div class="app-desc">Inspect TLS versions and cipher suites to identify weak configurations and enforce security compliance across servers.</div>
+    </div>
+    <div class="app-card">
+      <div class="app-icon">&#128270;</div>
+      <div class="app-title">Network Debugging</div>
+      <div class="app-desc">Diagnose failed connections, DNS misconfigurations, and slow handshakes by tracing each communication step.</div>
+    </div>
+    <div class="app-card">
+      <div class="app-icon">&#128200;</div>
+      <div class="app-title">Performance Monitoring</div>
+      <div class="app-desc">Measure RTT, DNS lookup times, and TLS overhead to optimise latency in web applications and APIs.</div>
+    </div>
+    <div class="app-card">
+      <div class="app-icon">&#127891;</div>
+      <div class="app-title">Education &amp; Research</div>
+      <div class="app-desc">Visualise the full TCP/TLS/HTTP stack for students learning computer networking and protocol internals.</div>
+    </div>
+    <div class="app-card">
+      <div class="app-icon">&#128196;</div>
+      <div class="app-title">Certificate Validation</div>
+      <div class="app-desc">Verify SSL/TLS certificate chains, expiry dates, and issuer details to prevent man-in-the-middle vulnerabilities.</div>
+    </div>
+    <div class="app-card">
+      <div class="app-icon">&#128295;</div>
+      <div class="app-title">API Testing</div>
+      <div class="app-desc">Analyse request/response headers, status codes, and payloads during REST API development and integration testing.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <h2>Important Parameters</h2>
+  <table class="styled-table">
+    <thead><tr><th>PARAMETER</th><th>DESCRIPTION</th><th>EXAMPLE</th></tr></thead>
+    <tbody>
+      <tr><td>scheme</td><td>Protocol identifier</td><td>https</td></tr>
+      <tr><td>host</td><td>Server domain name</td><td>example.com</td></tr>
+      <tr><td>port</td><td>TCP port number</td><td>443 / 80</td></tr>
+      <tr><td>TLS version</td><td>Encryption protocol version</td><td>TLSv1.3</td></tr>
+      <tr><td>cipher suite</td><td>Negotiated encryption algorithm</td><td>TLS_AES_256_GCM_SHA384</td></tr>
+      <tr><td>RTT</td><td>Round-trip time of TCP connect</td><td>~25 ms</td></tr>
+      <tr><td>status code</td><td>HTTP response result</td><td>200 OK</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="simulate">
+  <h2>Run Simulation</h2>
+
+  <div class="pipeline">
+    <div class="node" id="node-client">CLIENT</div>
+    <div class="node" id="node-dns">DNS</div>
+    <div class="node" id="node-tcp">TCP</div>
+    <div class="node" id="node-tls">TLS</div>
+    <div class="node" id="node-http">HTTP</div>
+    <div class="node" id="node-response">RESPONSE</div>
+  </div>
+
+  <div class="sim-box">
+    <div class="sim-header">https_downloader &mdash; live output</div>
+    <div class="sim-body">
+      <div class="sim-controls">
+        <input type="text" id="urlInput" placeholder="e.g. example.com"/>
+        <button class="btn-run" onclick="runSteps()">&#9654; RUN</button>
+        <button class="btn-dl" id="dlBtn" onclick="downloadOutput()">&#8659; DOWNLOAD OUTPUT</button>
+      </div>
+      <div id="output">Enter a URL above and click RUN...</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="video">
+  <h2>Video Explanation</h2>
+  <iframe src="https://www.youtube.com/embed/j9QmMEWmcfo" title="How HTTPS Works" allowfullscreen></iframe>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="references">
+  <h2>References</h2>
+  <div class="ref-box"><div class="ref-label">TEXTBOOK</div><a href="https://www.pearson.com/en-us/subject-catalog/p/computer-networks/P200000003183" target="_blank">Computer Networks — Tanenbaum &amp; Wetherall, 5th Ed.</a><p style="margin-top:4px;font-size:13px">Chapter 8: TLS, SSL, HTTPS internals.</p></div>
+  <div class="ref-box"><div class="ref-label">TEXTBOOK</div><a href="https://gaia.cs.umass.edu/kurose_ross/index.php" target="_blank">Computer Networking: A Top-Down Approach — Kurose &amp; Ross</a><p style="margin-top:4px;font-size:13px">Chapter 2 (HTTP/DNS), Chapter 8 (TLS/Security).</p></div>
+  <div class="ref-box"><div class="ref-label">OFFICIAL STANDARD</div><a href="https://www.rfc-editor.org/rfc/rfc8446" target="_blank">RFC 8446 — TLS 1.3 Specification (IETF)</a><p style="margin-top:4px;font-size:13px">The official standard defining TLS 1.3.</p></div>
+  <div class="ref-box"><div class="ref-label">OFFICIAL DOCS</div><a href="https://docs.python.org/3/library/ssl.html" target="_blank">Python ssl Module Documentation</a></div>
+  <div class="ref-box"><div class="ref-label">EDUCATIONAL</div><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" target="_blank">MDN Web Docs: HTTP Overview</a></div>
+  <div class="ref-box"><div class="ref-label">VIRTUAL LAB</div><a href="https://vlabs.ac.in" target="_blank">Virtual Labs — vlabs.ac.in</a></div>
+</div>
+
+<!-- DEVELOPED BY MODAL -->
+<div class="modal-overlay" id="devModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" onclick="document.getElementById('devModal').classList.remove('open')">&times;</button>
+    <h2>Developed By</h2>
+
+    <div class="dev-cards">
+      <div class="dev-card">
+        <div class="dev-avatar">&#128187;</div>
+        <div class="dev-name">P C Guhan</div>
+        <div class="dev-roll">Roll No: 24BYB1052</div>
+      </div>
+      <div class="dev-card">
+        <div class="dev-avatar"><img src="/static/kishore.jpeg" alt="Developer 1"/></div>
+        <div class="dev-name">SS Kishore Kumar</div>
+        <div class="dev-roll">Roll No: 24BYB1007</div>
+      </div>
+    </div>
+
+    <p style="color:#00ffcc;font-size:.72rem;letter-spacing:.08em;margin:16px 0 8px">PROJECT GUIDE</p>
+    <div class="guide-box">
+      <div class="guide-avatar"><img src="/static/swaminathan.png" alt="Developer 2"/></div>
+      <div>
+        <div class="guide-label">GUIDE</div>
+        <div class="guide-name">Prof. Swaminathan Annadurai</div>
+        <div class="guide-desig">Professor, Vellore Institute of Technology, Chennai</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HELP MODAL -->
+<div class="modal-overlay" id="helpModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('helpModal').classList.remove('open')">&times;</button>
+    <h2>How to Use This App</h2>
+    <p><strong>1. Run a simulation</strong></p>
+    <p>Go to the Simulate section. Enter any domain (e.g. <code>example.com</code>) and click <strong>RUN</strong>.</p>
+    <br/>
+    <p><strong>2. What you will see</strong></p>
+    <ul>
+      <li>Pipeline nodes light up as each step completes.</li>
+      <li>The output terminal shows each phase in a clearly labelled section.</li>
+      <li>Phases: URL Parsing &rarr; DNS Resolution &rarr; TCP Handshake &rarr; TLS Handshake &rarr; HTTP Request &rarr; Response.</li>
+    </ul>
+    <br/>
+    <p><strong>3. Download the output</strong></p>
+    <p>After a simulation completes, click <strong>DOWNLOAD OUTPUT</strong> to save the full terminal log as a <code>.txt</code> file.</p>
+    <br/>
+    <p><strong>4. Starting the server</strong></p>
+    <p>Run <code>python app.py</code> then open <code>http://localhost:5000</code> in your browser.</p>
+    <br/>
+    <p style="color:#555;font-size:.82rem">Tip: Some sites block programmatic access. Use <code>example.com</code> for a reliable test.</p>
+  </div>
+</div>
+
+<script>
+  function jumpTo(id) { document.getElementById(id).scrollIntoView({ behavior: "smooth" }); }
+
+  const SECTION_TITLES = {
+    "Step 1": "URL PARSING",
+    "Step 2": "DNS RESOLUTION",
+    "Step 3": "TCP 3-WAY HANDSHAKE",
+    "Step 4": "TLS HANDSHAKE",
+    "Step 5": "HTTP GET REQUEST",
+    "Step 6": "HTTP RESPONSE"
+  };
+
+  const STEP_NODE = {
+    "Step 1": "node-client",
+    "Step 2": "node-dns",
+    "Step 3": "node-tcp",
+    "Step 4": "node-tls",
+    "Step 5": "node-http",
+    "Step 6": "node-response"
+  };
+
+  let outputText = "";
+
+  function downloadOutput() {
+    const blob = new Blob([outputText], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "https_analysis_output.txt";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function runSteps() {
+    const url    = document.getElementById("urlInput").value.trim();
+    const output = document.getElementById("output");
+
+    output.innerHTML = "";
+    outputText = "";
+    document.getElementById("dlBtn").style.display = "none";
+    document.querySelectorAll(".node").forEach(n => n.classList.remove("active", "done"));
+
+    if (!url) { output.innerHTML = '<span class="line-warn">Please enter a URL.</span>'; return; }
+
+    const res  = await fetch("/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      output.innerHTML = `<span class="line-err">Error: ${data.error}</span>`;
+      return;
+    }
+
+    let sectionContent = null;
+
+    for (const s of data.steps) {
+      if (s.step.startsWith("Step")) {
+        const title = SECTION_TITLES[s.step] || s.step.toUpperCase();
+
+        const nodeId = STEP_NODE[s.step];
+        if (nodeId) {
+          const node = document.getElementById(nodeId);
+          node.classList.add("active");
+          await delay(250);
+          node.classList.remove("active");
+          node.classList.add("done");
+        }
+
+        const sectionDiv = document.createElement("div");
+        sectionDiv.className = "out-section";
+
+        const titleEl = document.createElement("div");
+        titleEl.className   = "out-section-title";
+        titleEl.textContent = `[ ${s.step.toUpperCase()} — ${title} ]`;
+        sectionDiv.appendChild(titleEl);
+
+        sectionContent = document.createElement("div");
+        sectionDiv.appendChild(sectionContent);
+        output.appendChild(sectionDiv);
+
+        outputText += `\n[ ${s.step.toUpperCase()} — ${title} ]\n`;
+        continue;
+      }
+
+      const line = document.createElement("div");
+      line.className   = "line-" + s.type;
+      line.textContent = s.text;
+      (sectionContent || output).appendChild(line);
+
+      outputText += s.text + "\n";
+      output.scrollTop = output.scrollHeight;
+      await delay(60);
+    }
+
+    document.getElementById("dlBtn").style.display = "inline-block";
+  }
+
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
