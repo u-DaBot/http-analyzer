@@ -120,8 +120,7 @@ This project is a practical implementation of core Computer Networks topics:
 ## Academic Context
 
 - **Subject:** Computer Networks
-- **Category:** Category 1 — Computer Networks Projects
-- **Institution:** *(Your institution name)*
+- **Institution:** *Vellore Institute of Technology, Chennai*
 
 ### Developed By
 
